@@ -45,6 +45,10 @@ class EmbeddingRequest(BaseModel):
     prompt: Union[str, List[str]]
     options: Optional[Dict] = None
 
+class ShowRequest(BaseModel):
+    model: str
+    verbose: Optional[bool] = False
+
 # 会话管理（简单实现，生产环境建议使用更安全的方式）
 sessions = set()
 
@@ -157,7 +161,10 @@ async def list_models():
             if not model_id: # 如果 model_id 为空则跳过
                 continue
 
-            name_with_tag = f"{model_id}:latest"
+            if ":" not in model_id:
+                name_with_tag = f"{model_id}:latest"
+            else:
+                name_with_tag = model_id
             created_timestamp = model.get("created")
             
             if created_timestamp:
@@ -439,6 +446,92 @@ async def create_embedding(request: EmbeddingRequest):
     except Exception as e:
         print(f"未知错误: {str(e)}")  # 添加日志
         raise HTTPException(status_code=500, detail=f"处理请求时发生错误: {str(e)}")
+
+@app.post("/api/show")
+async def show_model(req: ShowRequest):
+    # 从模板文件读取响应
+    template_path = os.path.join("templates", "response-api-show.json")
+    with open(template_path, "r", encoding="utf-8") as f:
+        resp = json.load(f)
+    # 修改一些必要信息
+    resp["model_info"]["general.basename"] = req.model
+    if req.verbose:
+        resp["model_info"]["tokenizer.ggml.merges"] = []
+        resp["model_info"]["tokenizer.ggml.token_type"] = []
+        resp["model_info"]["tokenizer.ggml.tokens"] = []
+    else:
+        resp["model_info"]["tokenizer.ggml.merges"] = None
+        resp["model_info"]["tokenizer.ggml.token_type"] = None
+        resp["model_info"]["tokenizer.ggml.tokens"] = None
+    return resp
+
+@app.post("/v1/chat/completions")
+async def forward_chat(request: Request):
+    try:
+        # 获取请求体
+        body = await request.json()
+        print(json.dumps(body, ensure_ascii=False))  # 打印请求体内容
+
+        # 修改请求体中的 model
+        body["model"] = config.model_mapping.get(body["model"], body["model"])
+
+        # 修改请求头中的 Authorization
+        # 删除 headers 中的 host 和 content-length，无论大小写
+        headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host", "content-length", "authorization"]}
+        headers["authorization"] = f"Bearer {config.openai_api_key}"
+
+        # 转发请求到上游
+        response = await client.post(
+            f"{config.openai_api_base}/v1/chat/completions",
+            json=body,
+            headers=headers
+        )
+
+        # 检查是否为流式响应
+        if response.headers.get("content-type") == "text/event-stream":
+            async def stream_response():
+                async for chunk in response.aiter_lines():
+                    if chunk:
+                        try:
+                            # 处理 SSE 格式的数据
+                            if chunk.startswith("data: "):
+                                data_str = chunk[6:]  # 去掉 "data: " 前缀
+                                if data_str.strip() == "[DONE]":
+                                    yield chunk + "\n"
+                                    continue
+                                # print(f"流式响应 chunk: {data_str}")  # 打印每个 chunk 的内容
+                                
+                                # 解析 JSON 数据
+                                data = json.loads(data_str)
+                                
+                                # 修改响应格式
+                                data["id"] = "chatcmpl-133"
+                                if "choices" in data:
+                                    for choice in data["choices"]:
+                                        if "text" in choice:
+                                            del choice["text"]
+                                data["system_fingerprint"] = "fp_ollama"
+
+                                # 重新构造 chunk
+                                modified_chunk = "data: " + json.dumps(data)
+                                yield modified_chunk + "\n"
+                            else:
+                                yield chunk + "\n"
+                        except json.JSONDecodeError:
+                            # 如果不是有效的 JSON，直接返回原始 chunk
+                            yield chunk + "\n"
+                # 确保流式响应结束时发送一个完成标志
+                yield "\n"
+
+            return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+        # 非流式响应保持现有逻辑
+        return JSONResponse(
+            status_code=response.status_code,
+            content=response.json()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"转发请求失败: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000) 
