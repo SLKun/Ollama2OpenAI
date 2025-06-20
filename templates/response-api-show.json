@@ -45,7 +45,11 @@
     "tensors": [],
     "capabilities": [
         "completion",
-        "tools"
+        "tools",
+        "insert",
+        "vision",
+        "embedding",
+        "thinking"
     ],
     "modified_at": "2025-05-23T06:42:03.926085656Z"
 }

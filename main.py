@@ -528,7 +528,7 @@ async def forward_chat(request: Request):
 
         # 调整请求体
         openai_body = await request.json()
-        openai_body["model"] = config.model_mapping.get(body["model"], body["model"])
+        openai_body["model"] = config.model_mapping.get(openai_body["model"], openai_body["model"])
 
         # 转发请求到上游
         response = await client.post(
