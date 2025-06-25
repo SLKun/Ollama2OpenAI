@@ -1,0 +1,11 @@
+{
+    "model_info": {},
+    "capabilities": [
+        "completion",
+        "tools",
+        "insert",
+        "vision",
+        "embedding",
+        "thinking"
+    ]
+}

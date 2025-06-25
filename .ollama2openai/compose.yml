@@ -1,0 +1,13 @@
+services:
+  ollama2openai:
+    build: ..
+    # image: lynricsy/ollama2openai:latest
+    restart: unless-stopped
+    ports:
+      - "11444:8000"
+    volumes:
+      - ../main.py:/app/main.py
+      - ../templates:/app/templates
+      - ./volumes/ollama2openai/data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

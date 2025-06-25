@@ -166,10 +166,11 @@ async def list_models():
             if not model_id: # 如果 model_id 为空则跳过
                 continue
 
-            if ":" not in model_id:
-                name_with_tag = f"{model_id}:latest"
-            else:
-                name_with_tag = model_id
+            # if ":" not in model_id:
+            #     name_with_tag = f"{model_id}:latest"
+            # else:
+            #     name_with_tag = model_id
+            name_with_tag = model_id
             created_timestamp = model.get("created")
             
             if created_timestamp:
@@ -200,8 +201,10 @@ async def list_models():
                 alias_details = base_model_details.copy()
                 # 别名也使用相同的 details 结构和时间戳
                 models.append({
-                    "name": f"{alias}:latest",
-                    "model": f"{alias}:latest",
+                    # "name": f"{alias}:latest",
+                    # "model": f"{alias}:latest",
+                    "name": f"{alias}",
+                    "model": f"{alias}",
                     "modified_at": modified_at_iso, # 使用原始模型的时间戳
                     "size": 0,
                     "digest": "",
@@ -504,19 +507,19 @@ async def create_embedding(request: EmbeddingRequest):
 @app.post("/api/show")
 async def show_model(req: ShowRequest):
     # 从模板文件读取响应
-    template_path = os.path.join("templates", "response-api-show.json")
+    template_path = os.path.join("templates", "response-api-show-github-copilot.json")
     with open(template_path, "r", encoding="utf-8") as f:
         resp = json.load(f)
     # 修改一些必要信息
-    resp["model_info"]["general.basename"] = req.model
-    if req.verbose:
-        resp["model_info"]["tokenizer.ggml.merges"] = []
-        resp["model_info"]["tokenizer.ggml.token_type"] = []
-        resp["model_info"]["tokenizer.ggml.tokens"] = []
-    else:
-        resp["model_info"]["tokenizer.ggml.merges"] = None
-        resp["model_info"]["tokenizer.ggml.token_type"] = None
-        resp["model_info"]["tokenizer.ggml.tokens"] = None
+    # resp["model_info"]["general.basename"] = req.model
+    # if req.verbose:
+    #     resp["model_info"]["tokenizer.ggml.merges"] = []
+    #     resp["model_info"]["tokenizer.ggml.token_type"] = []
+    #     resp["model_info"]["tokenizer.ggml.tokens"] = []
+    # else:
+    #     resp["model_info"]["tokenizer.ggml.merges"] = None
+    #     resp["model_info"]["tokenizer.ggml.token_type"] = None
+    #     resp["model_info"]["tokenizer.ggml.tokens"] = None
     return resp
 
 @app.post("/v1/chat/completions")
