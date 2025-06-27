@@ -4,14 +4,20 @@
 
 ## 功能特点 ✨
 
-- 🔄 完整支持 Ollama API 格式
-- 🎯 自动转换为 OpenAI API 格式
-- 🎨 美观的 Web 配置界面
-- 🔑 灵活的模型映射配置
-- 🌓 自动深色/浅色主题
-- ⌨️ 完整的键盘快捷键支持
-- 🔒 可选的 API 认证
-- 🧮 支持 Embedding 模型
+- 支持将OpenAI格式请求转化到VSCode Github Copilot的Ollama上游
+- 支持LobeHub的Ollama上游
+- 支持CherryStudio的Ollama上游
+- 提供一个简单的WEB页面进行配置
+
+目前已兼容的API接口:
+
+- `/api/tags`
+- `/api/show`
+- `/api/chat`
+- `/api/generate`
+- `/api/embedding`
+- `/v1/models`
+- `/v1/chat/completions`
 
 ## 界面预览 ✨
 
@@ -19,19 +25,6 @@
 
 
 ## 快速开始 🚀
-
-### 使用 Docker Hub（最简单）
-
-```bash
-# 创建数据目录
-mkdir -p data
-
-# 直接运行容器
-docker run -d \
-  -p 8000:8000 \
-  -v $(pwd)/data:/app/data \
-  lynricsy/ollama2openai:latest
-```
 
 ### 本地构建（开发者）
 
@@ -55,7 +48,7 @@ docker run -d \
 
 1. 克隆仓库：
 ```bash
-git clone https://github.com/yourusername/ollama2openai.git
+git clone https://github.com/slkun/ollama2openai.git
 cd ollama2openai
 ```
 
@@ -73,7 +66,7 @@ python main.py
 
 访问 `http://localhost:8000/login` 进入配置界面，可配置以下内容：
 
-- 管理密码：用于登录配置界面
+- 管理密码：用于登录配置界面, 默认密码为`admin`
 - OpenAI API Key：用于访问 OpenAI 兼容接口
 - Ollama API Key：用于 Ollama API 认证（可选）
 - OpenAI API Base URL：OpenAI 兼容接口的基础 URL
@@ -105,64 +98,3 @@ python main.py
 - `Alt + S`: 保存配置
 - `Alt + T`: 切换主题
 - `Alt + H`: 显示/隐藏快捷键面板
-
-## API 使用说明 📡
-
-### 模型列表
-
-```bash
-curl http://localhost:8000/api/tags
-```
-
-### 聊天接口
-
-```bash
-curl http://localhost:8000/api/chat -d '{
-  "model": "llama2",
-  "messages": [
-    {
-      "role": "user",
-      "content": "你好！"
-    }
-  ]
-}'
-```
-
-### 生成接口
-
-```bash
-curl http://localhost:8000/api/generate -d '{
-  "model": "llama2",
-  "prompt": "你好！",
-  "system": "你是一个友好的助手。"
-}'
-```
-
-### Embedding 接口
-
-```bash
-# 单个文本
-curl http://localhost:8000/api/embeddings -d '{
-  "model": "text-embedding-3-small",
-  "prompt": "你好！",
-  "options": {
-    "dimensions": 1536
-  }
-}'
-
-# 批量文本
-curl http://localhost:8000/api/embeddings -d '{
-  "model": "text-embedding-3-small",
-  "prompt": ["你好！", "世界！"],
-  "options": {
-    "dimensions": 1536
-  }
-}'
-```
-
-## 注意事项 ⚠️
-
-- 首次使用请修改默认管理密码
-- 请妥善保管你的 API 密钥
-- Ollama API Key 为可选配置，留空则不使用认证
-- 建议使用 HTTPS 代理以保护 API 通信安全
